@@ -9,11 +9,20 @@ from feature_format import featureFormat, targetFeatureSplit
 from tester import dump_classifier_and_data
 import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.cross_validation import train_test_split
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import precision_score
 
 ### Task 1: Select what features you'll use.
 ### features_list is a list of strings, each of which is a feature name.
 ### The first feature must be "poi".
-features_list = ['poi', 'from_poi_to_this_person', 'from_this_person_to_poi']  # You will need to use more features
+features_list = ['poi', 'salary']  # You will need to use more features
+
+features_list = ['poi', 'salary', 'deferral_payments', 'total_payments', 'loan_advances', 'bonus', 'restricted_stock_deferred',
+ 'deferred_income', 'total_stock_value', 'expenses', 'exercised_stock_options', 'other', 'long_term_incentive',
+ 'restricted_stock', 'director_fees']
 
 ### Load the dictionary containing the dataset
 with open("final_project_dataset.pkl", "r") as data_file:
@@ -27,29 +36,45 @@ my_dataset = data_dict
 print len(my_dataset.keys())
 my_dataset.pop('TOTAL', 0)
 
-for item in my_dataset:
+# for item in my_dataset:
+#
+#     if my_dataset[item]['from_poi_to_this_person'] == 'NaN' or my_dataset[item]['to_messages'] == 'NaN':
+#         my_dataset[item]['from_per'] = 0
+#     else:
+#         my_dataset[item]['from_per'] = float(my_dataset[item]['from_poi_to_this_person']) / float(my_dataset[item]['to_messages'])
+#
+#     if my_dataset[item]['from_this_person_to_poi'] == 'NaN' or my_dataset[item]['from_messages'] == 'NaN':
+#         my_dataset[item]['to_per'] = 0
+#     else:
+#         my_dataset[item]['to_per'] = float(my_dataset[item]['from_this_person_to_poi']) / float(my_dataset[item]['from_messages'])
 
-    if my_dataset[item]['from_poi_to_this_person'] == 'NaN' or my_dataset[item]['to_messages'] == 'NaN':
-        my_dataset[item]['from_per'] = 0
-    else:
-        my_dataset[item]['from_per'] = float(my_dataset[item]['from_poi_to_this_person']) / float(my_dataset[item]['to_messages'])
 
-    if my_dataset[item]['from_this_person_to_poi'] == 'NaN' or my_dataset[item]['from_messages'] == 'NaN':
-        my_dataset[item]['to_per'] = 0
-    else:
-        my_dataset[item]['to_per'] = float(my_dataset[item]['from_this_person_to_poi']) / float(my_dataset[item]['from_messages'])
-
-
-features_list = ['poi', 'from_per', 'to_per']
+# features_list = ['poi', 'from_per', 'to_per']
 ### Extract features and labels from dataset for local testing
 data = featureFormat(my_dataset, features_list, sort_keys=True)
 labels, features = targetFeatureSplit(data)
+# features_train, features_test, labels_train, labels_test = \
+#     train_test_split(features, labels, test_size=0.3, random_state=42)
+#
+# clf = DecisionTreeClassifier(random_state=2)
+# clf.fit(features_train,labels_train)
+# pred= clf.predict(features_test)
+# print("Accuracy: ", accuracy_score(labels_test, pred))
+# print("Precision: ", precision_score(labels_test, pred))
+# print("Recall: ", recall_score(labels_test, pred))
+#
+# importances = clf.feature_importances_
+# import numpy as np
+# indices = np.argsort(importances)[::-1]
+# print('Feature: ')
+# for i in range(16):
+#     print("{} feature {} ({})".format(i+1,features_list[i+1],importances[indices[i]]))
 
 # print labels
 # print features
 
-fb = np.array(features)
-lab = np.array(labels)
+# fb = np.array(features)
+# lab = np.array(labels)
 # new_data = np.vstack((fb, lab))
 
 # new_feature = []
@@ -70,17 +95,17 @@ lab = np.array(labels)
 # plt.ylabel("bonus")
 # plt.show()
 
-for item in data:
-    s = item[1]
-    t = item[2]
-    if item[0] == 1:
-        plt.scatter(s, t, color='r')
-    else:
-        plt.scatter(s, t, color='g')
-
-plt.xlabel('from_per')
-plt.ylabel('to_per')
-plt.show()
+# for item in data:
+#     s = item[1]
+#     t = item[2]
+#     if item[0] == 1:
+#         plt.scatter(s, t, color='r')
+#     else:
+#         plt.scatter(s, t, color='g')
+#
+# plt.xlabel('from_per')
+# plt.ylabel('to_per')
+# plt.show()
 
 
 
@@ -95,18 +120,37 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
+from sklearn.metrics import recall_score
 from sklearn.cross_validation import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.grid_search import GridSearchCV
 # clf = GaussianNB()
 
 features_train, features_test, labels_train, labels_test = \
     train_test_split(features, labels, test_size=0.3, random_state=42)
 
-clf = GaussianNB()
+stdsc = StandardScaler()
+features_train_std = stdsc.fit_transform(features_train)
+features_test_std = stdsc.transform(features_test)
+
+params = {'max_depth': [1, 2, 3, 4], 'min_samples_leaf':[1, 2, 3, 4], 'splitter':['best', 'random']}
+clf = DecisionTreeClassifier()
+searchVC = GridSearchCV(clf, params)
+searchVC.fit(features_train, labels_train)
+pred = searchVC.predict(features_test_std)
+print("score: ", accuracy_score(labels_test, pred))
+print recall_score(labels_test, pred)
+
 # clf = DecisionTreeClassifier()
-# clf = LogisticRegression()
-clf.fit(features_train, labels_train)
-yped = clf.predict(features_test)
-# print accuracy_score(yped, labels_test)
+# clf.fit(features_train, labels_train)
+# pred = clf.predict(features_test)
+# print("score: ", accuracy_score(labels_test, pred))
+# print recall_score(labels_test, pred)
+
+# searchVC = GridSearchCV(clf, param_grid=params)
+# searchVC.fit(features_train_std, labels_train)
+# print 'best_params'
+# print searchVC.best_params_
 
 ### Task 5: Tune your classifier to achieve better than .3 precision and recall 
 ### using our testing script. Check the tester.py script in the final project
@@ -118,17 +162,17 @@ yped = clf.predict(features_test)
 # Example starting point. Try investigating other evaluation techniques!
 from sklearn.cross_validation import train_test_split
 
-features_list2 = ["poi", "from_per", "to_per", "shared_receipt_with_poi"]
-data2 = featureFormat(my_dataset, features_list2)
-labels2, features2 = targetFeatureSplit(data2)
-from sklearn import cross_validation
-features_train2, features_test2, labels_train2, labels_test2 = cross_validation.train_test_split(features2, labels2, test_size=0.5, random_state=1)
-
-clf = GaussianNB()
-clf = DecisionTreeClassifier()
-clf.fit(features_train2, labels_train2)
-pred = clf.predict(features_test2)
-print("score: ", accuracy_score(labels_test2, pred))
+# features_list2 = ["poi", "from_per", "to_per", "shared_receipt_with_poi"]
+# data2 = featureFormat(my_dataset, features_list2)
+# labels2, features2 = targetFeatureSplit(data2)
+# from sklearn import cross_validation
+# features_train2, features_test2, labels_train2, labels_test2 = cross_validation.train_test_split(features2, labels2, test_size=0.5, random_state=1)
+#
+# clf = GaussianNB()
+# # clf = DecisionTreeClassifier()
+# clf.fit(features_train2, labels_train2)
+# pred = clf.predict(features_test2)
+# print("score: ", accuracy_score(labels_test2, pred))
 
 ### Task 6: Dump your classifier, dataset, and features_list so anyone can
 ### check your results. You do not need to change anything below, but make sure
@@ -152,9 +196,11 @@ for train_indices, test_indices in kf:
 clf = DecisionTreeClassifier(random_state=0)
 clf.fit(features_train, labels_train)
 score = clf.score(features_test, labels_test)
+pred = clf.predict(features_test)
 print('score', score)
-
-### use manual tuning parameter min_samples_split
+print('recall', recall_score(labels_test, pred))
+#
+# ### use manual tuning parameter min_samples_split
 clf2 = DecisionTreeClassifier(min_samples_split=5, random_state=0)
 clf2 = clf2.fit(features_train, labels_train)
 pred2 = clf2.predict(features_test)
